@@ -24,22 +24,19 @@ AWSIM Dallara AV-21R
 ## Layout
 
 ```text
-autonomous-racing-project/
-  AWSIM/
-  awsim_builds/
-  gohan/
-    configs/
-    scripts/
-    src/gohan/
-    tests/
-    runs/
+gohan/
+  configs/
+  scripts/
+  src/gohan/
+  tests/
+  runs/
 ```
 
 ## Prerequisites
 
 - Linux with ROS2 installed externally.
 - Python 3.10+.
-- AWSIM Racing Simulator installed separately.
+- AWSIM Racing Simulator running separately, from any install location.
 - ROS2 messages for the Autonoma high-level racing interface, such as `autonoma_msgs`.
 - CPU is the default training device.
 
@@ -80,18 +77,16 @@ export ROS_DOMAIN_ID=0
 
 ## AWSIM Must Run Separately
 
-GOHAN does not launch AWSIM. Start AWSIM in its own terminal, keep it open, and put the car into the Drive scene with ROS2 control enabled. GOHAN then connects automatically through ROS2 topic discovery.
+GOHAN does not need an AWSIM clone or build directory. Start AWSIM however you installed it, keep it open, and put the car into the Drive scene with ROS2 control enabled. GOHAN then connects automatically through ROS2 topic discovery.
 
-For a downloaded Linux build, AWSIM docs commonly show a Linux executable named `AWSIM.so`:
+Example AWSIM terminal:
 
 ```bash
-cd /home/osama/Documents/RL/AG26/awsim_builds
-chmod +x AWSIM.so
 export ROS_DOMAIN_ID=0
-./AWSIM.so
+# launch AWSIM using your installed executable, launcher, or desktop shortcut
 ```
 
-If your binary has another name, run that file instead. In the AWSIM GUI, use Scenario Setup, choose a ROS2-controlled vehicle, and enter Drive. Topics will not appear while AWSIM is closed or still sitting outside the running scenario.
+In the AWSIM GUI, use Scenario Setup, choose a ROS2-controlled vehicle, and enter Drive. Topics will not appear while AWSIM is closed or still sitting outside the running scenario.
 
 Manual reset is the default. Automatic reset requires an AWSIM-side reset service or simulator integration. Add that later in `AWSIMRacingEnv.reset()` once a reset API is available.
 
