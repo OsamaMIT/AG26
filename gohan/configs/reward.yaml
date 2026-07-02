@@ -1,0 +1,12 @@
+reward:
+  progress_weight: 8.0
+  speed_weight: 1.0
+  lateral_error_weight: 2.0
+  heading_error_weight: 1.5
+  yaw_rate_weight: 0.2
+  action_smoothness_weight: 0.1
+  off_track_penalty: 25.0
+  collision_penalty: 50.0
+  reverse_penalty: 5.0
+  stuck_penalty: 10.0
+  low_speed_penalty: 0.1

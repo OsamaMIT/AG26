@@ -1,0 +1,16 @@
+training:
+  algorithm: PPO
+  total_timesteps: 100000
+  learning_rate: 0.0003
+  n_steps: 1024
+  batch_size: 64
+  gamma: 0.99
+  gae_lambda: 0.95
+  ent_coef: 0.01
+  clip_range: 0.2
+  seed: 42
+  device: cpu
+  policy_hidden_sizes:
+    - 128
+    - 128
+  checkpoint_freq: 10000

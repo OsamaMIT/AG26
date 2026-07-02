@@ -1,0 +1,64 @@
+ros:
+  # GOHAN connects to an already-running AWSIM process over ROS2.
+  # Start AWSIM separately, put a ROS2-controlled vehicle in Drive mode,
+  # then run GOHAN scripts with the same ROS_DOMAIN_ID.
+  node_name: gohan_awsim_bridge
+  spin_hz: 50
+  command_rate_hz: 20
+  telemetry_timeout_s: 2.0
+  topics:
+    odometry_candidates:
+      - /novatel_top/inspva
+      - /novatel_bottom/inspva
+      - /novatel_top/odom
+      - /novatel_bottom/odom
+      - /odom
+    imu_candidates:
+      - /novatel_top/rawimux
+      - /novatel_bottom/rawimux
+      - /novatel_top/imu/data
+      - /novatel_bottom/imu/data
+      - /imu/data
+    vehicle_data_candidates:
+      - /vehicle_data
+    powertrain_candidates:
+      - /powertrain_data
+    race_control_candidates:
+      - /race_control
+    command_candidates:
+      - /vehicle_inputs
+      - /to_raptor
+    low_level_can_candidates:
+      from_can_bus: /from_can_bus
+      to_can_bus: /to_can_bus
+
+env:
+  simulator: awsim_racing
+  vehicle: dallara_av21r
+  dt: 0.05
+  max_episode_steps: 3000
+  require_awsim_connection: true
+  reset_mode: manual
+  start_training_after_first_telemetry: true
+  track_config: configs/tracks/default_track.yaml
+
+vehicle:
+  name: Dallara AV-21R
+  mass_kg: 815.11
+  wheelbase_m: 2.9718
+  lf_m: 1.6785
+  lr_m: 1.2933
+  tire_radius_m: 0.3
+  max_speed_mps: 90.0
+  max_yaw_rate_radps: 3.0
+  max_lateral_error_m: 20.0
+  max_heading_error_rad: 3.14159
+
+safety:
+  enable: true
+  max_steering_rate_per_s: 3.0
+  max_throttle_rate_per_s: 4.0
+  max_brake_rate_per_s: 6.0
+  early_training_speed_cap_mps: 25.0
+  emergency_brake_on_no_telemetry: true
+  emergency_brake_on_offtrack: true

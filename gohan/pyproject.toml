@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gohan"
+version = "0.1.0"
+description = "Telemetry-only reinforcement learning driver for AWSIM Racing Simulator and Dallara AV-21R"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "GOHAN" }]
+license = { text = "MIT" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra -p no:launch_testing -p no:launch_ros -p no:ament_copyright -p no:ament_lint -p no:ament_xmllint -p no:ament_pep257 -p no:ament_flake8"
