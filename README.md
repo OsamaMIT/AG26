@@ -2,9 +2,9 @@
 
 GOHAN means Guided Optimization for High-speed Autonomous Navigation.
 
-GOHAN is a telemetry-only reinforcement learning autonomy stack for Autonoma Labs AWSIM Racing Simulator and the Dallara AV-21R. AWSIM publishes ROS2 telemetry, GOHAN converts that telemetry into a normalized vector observation, a Stable-Baselines3 policy predicts steering and throttle/brake, and GOHAN publishes high-level vehicle commands back to AWSIM.
+This repository is now the GOHAN project root. It contains a telemetry-only reinforcement learning autonomy stack for Autonoma Labs AWSIM Racing Simulator and the Dallara AV-21R. AWSIM runs separately and publishes ROS2 telemetry; GOHAN converts that telemetry into a normalized vector observation, runs a Stable-Baselines3 policy, and publishes steering/throttle/brake commands back through ROS2.
 
-GOHAN is a separate Python/ROS2 autonomy project. It does not include a simulator, modify simulator source, use camera perception, or assume CUDA.
+GOHAN does not include AWSIM, clone AWSIM, modify simulator source, use camera perception, or assume CUDA.
 
 ## Architecture
 
@@ -24,71 +24,106 @@ AWSIM Dallara AV-21R
 ## Layout
 
 ```text
-gohan/
+AG26/
+  README.md
+  pyproject.toml
+  requirements.txt
   configs/
+    awsim.yaml
+    reward.yaml
+    training.yaml
+    tracks/default_track.yaml
   scripts/
   src/gohan/
   tests/
   runs/
+  ros2_ws/
+    src/sim-msgs/
+    build/
+    install/
+    log/
 ```
+
+`ros2_ws` is only for external ROS2 message packages such as `autonoma_msgs`. The Python package lives directly in this root under `src/gohan`.
 
 ## Prerequisites
 
-- Linux with ROS2 installed externally.
+- Linux Mint 22.x or another ROS2 Jazzy-compatible Linux system.
+- ROS2 installed externally, for example `/opt/ros/jazzy`.
 - Python 3.10+.
-- AWSIM Racing Simulator running separately, from any install location.
-- ROS2 messages for the Autonoma high-level racing interface, such as `autonoma_msgs`.
-- CPU is the default training device.
+- AWSIM Racing Simulator installed separately and running in a ROS2-controlled racing scene.
+- Autonoma message packages built in `ros2_ws`.
+- CPU-first training. CUDA is not required.
 
-`rclpy` is intentionally not listed in `requirements.txt`; it comes from the sourced ROS2 installation.
+`rclpy` is intentionally not in `requirements.txt`; it comes from the sourced ROS2 installation.
 
-## One-Time GOHAN Setup
+## Build ROS2 Message Workspace
 
-Use system Python for ROS2 compatibility:
+Run this once from the project root. Use system Python, not Anaconda, so ROS2 CMake finds the right Python packages.
 
 ```bash
-cd /home/osama/Documents/RL/AG26/gohan
+cd /home/osama/Documents/RL/AG26
+mkdir -p ros2_ws/src
+cd ros2_ws/src
+
+git clone https://github.com/autonomalabs/sim-msgs.git
+
+cd /home/osama/Documents/RL/AG26/ros2_ws
 conda deactivate
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3
+```
+
+If a previous configure was polluted by Anaconda, rebuild with:
+
+```bash
+cd /home/osama/Documents/RL/AG26/ros2_ws
+conda deactivate
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install --cmake-clean-cache --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3
+```
+
+## Set Up GOHAN Python
+
+Create the Python environment in the root:
+
+```bash
+cd /home/osama/Documents/RL/AG26
+conda deactivate
+
 /usr/bin/python3 -m venv .venv
 source .venv/bin/activate
+
 pip install -r requirements.txt
 pip install -e .
 ```
 
-Build/source the external ROS2 message workspace separately. On this machine the expected workspace is:
+## Every GOHAN Terminal
+
+Run this before any ROS-facing script:
 
 ```bash
-source /opt/ros/jazzy/setup.bash
-source /home/osama/Documents/RL/AG26/ros2_ws/install/setup.bash
-```
-
-## Every New GOHAN Terminal
-
-Run these commands before any GOHAN ROS script:
-
-```bash
-cd /home/osama/Documents/RL/AG26/gohan
+cd /home/osama/Documents/RL/AG26
 conda deactivate
+
 source /opt/ros/jazzy/setup.bash
 source /home/osama/Documents/RL/AG26/ros2_ws/install/setup.bash
 source .venv/bin/activate
 export ROS_DOMAIN_ID=0
 ```
 
-## AWSIM Must Run Separately
+## Start AWSIM
 
-GOHAN does not need an AWSIM clone or build directory. Start AWSIM however you installed it, keep it open, and put the car into the Drive scene with ROS2 control enabled. GOHAN then connects automatically through ROS2 topic discovery.
-
-Example AWSIM terminal:
+AWSIM does not need to live in this repository. Start it however you installed it, then enter the racing Drive scene with ROS2 control enabled.
 
 ```bash
 export ROS_DOMAIN_ID=0
 # launch AWSIM using your installed executable, launcher, or desktop shortcut
 ```
 
-In the AWSIM GUI, use Scenario Setup, choose a ROS2-controlled vehicle, and enter Drive. Topics will not appear while AWSIM is closed or still sitting outside the running scenario.
+Topics will not appear while AWSIM is closed or still outside the running Drive scenario. If GOHAN sees only `/parameter_events` and `/rosout`, ROS2 is alive but AWSIM is not visible on that ROS graph.
 
-Manual reset is the default. Automatic reset requires an AWSIM-side reset service or simulator integration. Add that later in `AWSIMRacingEnv.reset()` once a reset API is available.
+Manual reset is the default. Automatic reset needs an AWSIM-side reset service or simulator integration; add that later in `AWSIMRacingEnv.reset()` when a reset API is available.
 
 ## Inspect ROS2 Topics
 
@@ -97,7 +132,7 @@ ros2 topic list -t
 python scripts/inspect_ros_topics.py --config configs/awsim.yaml
 ```
 
-Expected high-level topics include:
+Expected high-level racing topics include:
 
 ```text
 /novatel_top/inspva or /novatel_bottom/inspva
@@ -108,8 +143,6 @@ Expected high-level topics include:
 /vehicle_inputs
 /to_raptor
 ```
-
-If you only see `/parameter_events` and `/rosout`, ROS2 is alive but AWSIM is not visible on the graph. Keep AWSIM open in Drive mode and confirm both terminals use the same `ROS_DOMAIN_ID`.
 
 If a command topic type is unsupported, inspect it:
 
@@ -123,7 +156,7 @@ Then update:
 src/gohan/ros/message_adapters.py
 ```
 
-GOHAN will fail clearly rather than publishing an unknown command shape.
+GOHAN fails clearly instead of publishing an unknown command shape.
 
 ## Record Telemetry
 
@@ -131,7 +164,7 @@ GOHAN will fail clearly rather than publishing an unknown command shape.
 python scripts/record_telemetry.py --config configs/awsim.yaml --run-name telemetry_test
 ```
 
-This checks that AWSIM telemetry is visible and that the adapters can build GOHAN telemetry rows.
+This verifies that AWSIM telemetry is visible and that the adapters can build GOHAN telemetry rows.
 
 ## Test Command Publishing
 
@@ -139,7 +172,7 @@ This checks that AWSIM telemetry is visible and that the adapters can build GOHA
 python scripts/drive_manual_test.py --config configs/awsim.yaml --mode slow_forward
 ```
 
-Modes:
+Supported modes:
 
 - `neutral`
 - `brake`
@@ -158,7 +191,7 @@ This waits for telemetry, creates one observation vector, publishes one neutral 
 
 ## Train PPO
 
-Run training only after topic inspection, telemetry recording, environment check, and manual command publishing work.
+Train only after topic inspection, telemetry recording, environment check, and manual command publishing work.
 
 ```bash
 python scripts/train_ppo.py \
@@ -254,23 +287,26 @@ else:
 
 `RacingReward` combines progress, speed, line tracking, heading alignment, yaw stability, action smoothness, off-track, collision, reverse-progress, and stuck penalties.
 
-## Limitations
-
-- Automatic reset requires AWSIM-side reset support or manual reset.
-- Command message types may need adapter updates for a specific AWSIM build.
-- The first goal is stable lap completion, not optimal racing.
-
-## Roadmap
-
-- v1: direct telemetry-to-control PPO.
-- v1.5: reward and curriculum refinement.
-- v2: telemetry-guided racing target correction.
-- v3: hybrid controller plus RL target optimizer.
-
 ## Tests
 
 ```bash
+cd /home/osama/Documents/RL/AG26
+source .venv/bin/activate
 pytest
 ```
 
-Unit tests do not require ROS2 or AWSIM.
+Unit tests do not require AWSIM or ROS2.
+
+## Limitations
+
+- Automatic reset requires AWSIM-side reset support or manual reset.
+- Command message types may need adapter updates if AWSIM changes the ROS2 interface.
+- The first training goal is stable lap completion, not optimal lap time.
+- The default track file is a placeholder; replace it with AWSIM track waypoints or a racing line before serious training.
+
+## Roadmap
+
+- v1 direct telemetry-to-control PPO.
+- v1.5 reward and curriculum refinement.
+- v2 telemetry-guided racing target correction.
+- v3 hybrid controller plus RL target optimizer.

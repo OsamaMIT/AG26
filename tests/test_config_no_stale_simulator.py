@@ -36,10 +36,17 @@ def test_no_stale_simulator_references_in_project_text():
     ]
     excluded_dirs = {
         ".git",
+        ".agents",
+        ".codex",
         ".venv",
         "__pycache__",
         ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
         "runs",
+        "ros2_ws",
+        "AWSIM",
+        "awsim_builds",
         "build",
         "dist",
     }
